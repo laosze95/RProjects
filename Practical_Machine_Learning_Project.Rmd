@@ -1,0 +1,153 @@
+---
+title: "Practical_Machine_Learning_Project"
+author: "Pramod Verma"
+date: "11 July 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown for the Machine Learning Project
+
+#Loading all the necessary library for this project.
+
+
+```{r warning=FALSE}
+library(caret)
+library(ggplot2)
+library(tidyverse)
+library(randomForest)
+library(rpart)
+library(gbm)
+library(rattle)
+
+```
+
+
+# Connecting to the data url and loading it in the data frame
+
+
+```{r include=TRUE}
+url_train <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+url_test <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+raw_train <- read.csv(url(url_train))
+raw_test <- read.csv(url(url_test))
+```
+
+# Removing the na, NaN and all columns with near zero variance
+
+```{r include=TRUE}
+nearzero_var <- nearZeroVar(raw_train)
+training <- raw_train[, -nearzero_var]
+
+# Still, there are lot of missing values in many columns
+# Remove all variables with more than half "na" values to reduce no of columns
+
+training <- training[,colMeans(!is.na(training))>0.5]
+training <- training[,-1] # Remove the first column which is index
+dim(training)
+
+```
+
+# Devide the clean traing data into two sets, mytrain & mytest
+
+```{r include=TRUE}
+set.seed(2341)
+
+inTrain <- createDataPartition(training$classe, p=0.7, list = FALSE)
+newtrain <- training[inTrain, ]
+newtest <- training[-inTrain,]
+
+dim(newtrain)
+dim(newtest)
+
+```
+
+
+# Make the downloaded testing data columns same as training data
+
+```{r include=TRUE}
+
+traincol <- colnames(training[, -58]) # Last column is different
+testing <- raw_test[traincol]
+
+classe <- as.factor(x = "") # Add last column as classe in testing
+testing <- cbind(testing, classe)
+
+dim(testing)
+
+```
+
+
+# Applying the Random Forest for Predicting Classe
+
+```{r include=TRUE}
+
+set.seed(1717)  # Setting the seed for reproducibility
+
+Fit1 <- train(classe ~ ., data=newtrain, method="rf")
+Pred1 <- predict(Fit1, newdata=newtest)
+
+Result1 <- confusionMatrix(Pred1, newtest$classe)
+Result1  # Display the confusion matrix
+
+plot(Fit1)  # Plot the random forest model
+
+```
+
+# Applying the GBM for Predicting Classe
+
+```{r include=TRUE}
+
+set.seed(1718)  # Setting the seed for reproducibility
+
+Fit2 <- train(classe ~ ., data=newtrain, method="gbm")
+Pred2 <- predict(Fit2, newdata=newtest)
+
+Result2 <- confusionMatrix(Pred2, newtest$classe)
+Result2  # Display the confusion matrix
+
+plot(Fit2)  # Plot the random forest model
+
+```
+
+
+# Applying the Decision Tree for Predicting Classe
+
+```{r include=TRUE}
+
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+set.seed(17123)  # Setting the seed for reproducibility
+
+Fit3 <- train(classe ~ ., data=newtrain, method="rpart", trControl=trctrl, tuneLength=10)
+
+Pred3 <- predict(Fit3, newdata=newtest)
+
+Result3 <- confusionMatrix(Pred3, newtest$classe)
+Result3  # Display the confusion matrix
+
+# Plot the random forest model
+plot(Fit3)  
+plot(Fit3$finalModel)
+text(Fit3$finalModel, all = TRUE)
+```
+`
+# Applying the model on the testing data
+# The best model was random forest with the higest accuracy
+
+```{r include=TRUE}
+
+set.seed(1730)  # Setting the seed for reproducibility
+
+Pred_Testing <- predict(Fit1, newdata=testing)
+
+Final_Result <- data.frame(1:20,Pred_Testing)
+names(Final_Result) <- c("Problem_ID", "Classe")
+Final_Result
+
+```
+
+# End of Project
