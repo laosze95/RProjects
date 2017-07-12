@@ -1,7 +1,7 @@
 ---
 title: "Practical_Machine_Learning_Project"
 author: "Pramod Verma"
-date: "11 July 2017"
+date: "12 July 2017"
 output: html_document
 ---
 
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #Loading all the necessary library for this project.
 
 
-```{r warning=FALSE}
+```{r, echo=TRUE,warning=FALSE,message=FALSE,error=FALSE}
 library(caret)
 library(ggplot2)
 library(tidyverse)
@@ -57,7 +57,7 @@ dim(training)
 ```{r include=TRUE}
 set.seed(2341)
 
-inTrain <- createDataPartition(training$classe, p=0.7, list = FALSE)
+inTrain <- createDataPartition(training$classe, p=0.5, list = FALSE)
 newtrain <- training[inTrain, ]
 newtest <- training[-inTrain,]
 
@@ -84,7 +84,7 @@ dim(testing)
 
 # Applying the Random Forest for Predicting Classe
 
-```{r include=TRUE}
+```{r, echo=TRUE,warning=FALSE,message=FALSE,error=FALSE}
 
 set.seed(1717)  # Setting the seed for reproducibility
 
@@ -100,11 +100,13 @@ plot(Fit1)  # Plot the random forest model
 
 # Applying the GBM for Predicting Classe
 
-```{r include=TRUE}
+```{r, echo=TRUE,warning=FALSE,message=FALSE,error=FALSE}
 
 set.seed(1718)  # Setting the seed for reproducibility
 
-Fit2 <- train(classe ~ ., data=newtrain, method="gbm")
+trctrl <- trainControl(method = "repeatedcv",number = 5,repeats = 1)
+
+Fit2 <- train(classe ~ ., data=newtrain, method="gbm", trControl=trctrl, verbose=FALSE)
 Pred2 <- predict(Fit2, newdata=newtest)
 
 Result2 <- confusionMatrix(Pred2, newtest$classe)
@@ -119,7 +121,7 @@ plot(Fit2)  # Plot the random forest model
 
 ```{r include=TRUE}
 
-trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+trctrl <- trainControl(method = "repeatedcv", number = 5, repeats = 1)
 set.seed(17123)  # Setting the seed for reproducibility
 
 Fit3 <- train(classe ~ ., data=newtrain, method="rpart", trControl=trctrl, tuneLength=10)
